@@ -1,7 +1,7 @@
 # order-matching-engine
 
 ## File Structure
-
+```
 order-matching-engine/
 │
 ├── cmd/
@@ -45,3 +45,4 @@ order-matching-engine/
 ├── go.mod
 ├── go.sum
 └── [README.md](http://readme.md/)
+```
