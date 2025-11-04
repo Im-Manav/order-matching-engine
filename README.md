@@ -44,5 +44,5 @@ order-matching-engine/
 │
 ├── go.mod
 ├── go.sum
-└── [README.md](http://readme.md/)
+└── [README.md]
 ```
