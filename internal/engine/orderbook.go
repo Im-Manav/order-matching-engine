@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
 )
@@ -39,6 +40,21 @@ func (ob *OrderBook) RemoveOrder(orderID string, side string) {
 	}
 }
 
+// The highest buy
+func (ob *OrderBook) GetBestBid() *models.Order {
+	priceList := createPriceList(ob.buyOrders)
+	sort.Float64s(priceList)
+	return ob.buyOrders[priceList[len(priceList)-1]][0]
+}
+
+// The lowest sell
+func (ob *OrderBook) GetBestAsk() *models.Order {
+	priceList := createPriceList(ob.sellOrders)
+	sort.Float64s(priceList)
+	return ob.sellOrders[priceList[0]][0]
+}
+
+// Helper for Remove Order
 func removeFromMap(m map[float64][]*models.Order, orderID string) (bool, error) {
 	for price, orders := range m {
 		for i, order := range orders {
@@ -52,4 +68,16 @@ func removeFromMap(m map[float64][]*models.Order, orderID string) (bool, error) 
 		}
 	}
 	return false, errors.New("key not found")
+}
+
+// Helper for GetBestBid() and GetBestAsk()
+func createPriceList(m map[float64][]*models.Order) []float64 {
+	if m == nil {
+		return []float64{}
+	}
+	var priceList []float64
+	for price := range m {
+		priceList = append(priceList, price)
+	}
+	return priceList
 }
