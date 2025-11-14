@@ -6,44 +6,43 @@
 order-matching-engine/
 │
 ├── cmd/
-│   └── server/              # Main entrypoint
-│       └── main.go
+│   └── ome/                     # Executable name (Order Matching Engine)
+│       └── main.go              # App entrypoint
 │
 ├── internal/
-│   ├── core/                # Core OME logic
-│   │   ├── order.go
-│   │   ├── trade.go
-│   │   ├── orderbook.go
-│   │   └── matcher.go
+│   ├── engine/                  # Core OME logic
+│   │   ├── orderbook.go         # In-memory order book (sorted by price/time)
+│   │   └── matcher.go           # Matching algorithm (price-time priority)
 │   │
-│   ├── api/                 # REST + WebSocket handlers
-│   │   ├── rest/
+│   ├── api/                     # Transport layer (REST, WebSocket)
+│   │   ├── http/                # REST endpoints
 │   │   │   └── handler.go
-│   │   ├── websocket/
+│   │   ├── ws/                  # WebSocket endpoints
 │   │   │   └── handler.go
 │   │   └── middleware.go
 │   │
-│   ├── persistence/         # DB layer
-│   │   ├── mongo.go
-│   │   └── scylla.go
+│   ├── storage/                 # Data persistence (DB, caching)
+│   │   ├── mongo_store.go
+│   │   └── scylla_store.go
 │   │
-│   ├── config/              # Configuration
+│   ├── config/                  # Configuration loading
 │   │   └── config.go
 │   │
-│   ├── utils/               # Helpers (logging, auth, etc.)
+│   ├── util/                    # Generic utilities (logging, auth, etc.)
 │   │   ├── logger.go
 │   │   └── auth.go
 │   │
-│   └── tests/               # Unit/integration tests
+│   └── test/                    # Tests for core and API
 │       ├── matcher_test.go
 │       └── api_test.go
 │
-├── pkg/                     # Shared packages (optional)
-│   └── models/              # Structs used across layers
-│       ├── order.go
-│       └── trade.go
+├── pkg/                         # Public reusable packages
+│   └── models/                  # Domain models
+│       ├── order.go             # Order struct
+│       └── trade.go             # Trade struct
 │
+├── .gitignore
 ├── go.mod
 ├── go.sum
-└── [README.md]
+└── README.md
 ```
