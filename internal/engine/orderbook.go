@@ -54,6 +54,31 @@ func (ob *OrderBook) GetBestAsk() *models.Order {
 	return ob.sellOrders[priceList[0]][0]
 }
 
+// To print the entire book
+func (ob *OrderBook) Printbook(depth int) {
+	fmt.Println("----Order Book----")
+	sellPrices := createPriceList(ob.sellOrders)
+	sort.Float64s(sellPrices)
+	for i, price := range sellPrices {
+		if i >= depth {
+			break
+		}
+		fmt.Printf("SELL PRICE: %.2f | QTY: %d\n", price, totalQuantity(ob.sellOrders[price]))
+	}
+
+	buyPrices := createPriceList(ob.buyOrders)
+	sort.Float64s(buyPrices)
+	for i := len(buyPrices) - 1; i >= 0; i-- {
+		price := buyPrices[i]
+		if len(buyPrices)-i >= depth {
+			break
+		}
+		fmt.Printf("BUY PRICE: %.2f | QTY: %d", price, totalQuantity(ob.buyOrders[price]))
+	}
+}
+
+// <-- Helper Functions -->
+
 // Helper for Remove Order
 func removeFromMap(m map[float64][]*models.Order, orderID string) (bool, error) {
 	for price, orders := range m {
@@ -80,4 +105,13 @@ func createPriceList(m map[float64][]*models.Order) []float64 {
 		priceList = append(priceList, price)
 	}
 	return priceList
+}
+
+// Helper to calculate total quantity at a price
+func totalQuantity(o []*models.Order) int {
+	qty := 0
+	for _, order := range o {
+		qty += int(order.Quantity)
+	}
+	return qty
 }
