@@ -42,14 +42,26 @@ func (ob *OrderBook) RemoveOrder(orderID string, side string) {
 
 // The highest buy
 func (ob *OrderBook) GetBestBid() *models.Order {
+	if len(ob.buyOrders) == 0 {
+		return nil
+	}
 	priceList := createPriceList(ob.buyOrders)
+	if len(priceList) == 0 {
+		return nil
+	}
 	sort.Float64s(priceList)
 	return ob.buyOrders[priceList[len(priceList)-1]][0]
 }
 
 // The lowest sell
 func (ob *OrderBook) GetBestAsk() *models.Order {
+	if len(ob.sellOrders) == 0 {
+		return nil
+	}
 	priceList := createPriceList(ob.sellOrders)
+	if len(priceList) == 0 {
+		return nil
+	}
 	sort.Float64s(priceList)
 	return ob.sellOrders[priceList[0]][0]
 }
