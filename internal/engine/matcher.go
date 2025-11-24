@@ -9,6 +9,8 @@ import (
 )
 
 func Match(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+	ob.AddOrder(order)
+	order.Status = "OPEN"
 	switch order.Side {
 	case "BUY":
 		return matchBuyOrder(order, ob)
@@ -20,6 +22,7 @@ func Match(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
 }
 
 func matchBuyOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+	originalQty := order.Quantity
 	trades := []*models.Trade{}
 	for order.Quantity > 0 {
 		bestAsk := ob.GetBestAsk()
@@ -34,16 +37,25 @@ func matchBuyOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) 
 		bestAsk.Quantity -= tradeQty
 
 		if bestAsk.Quantity == 0 {
+			bestAsk.Status = "FILLED"
 			ob.RemoveOrder(bestAsk.ID, "SELL")
+		} else {
+			bestAsk.Status = "PARTIAL"
 		}
 	}
-	if order.Quantity > 0 {
-		ob.AddOrder(order)
+	if order.Quantity == 0 {
+		order.Status = "FILLED"
+		ob.RemoveOrder(order.ID, "BUY")
+	} else if order.Quantity < originalQty {
+		order.Status = "PARTIAL"
+	} else {
+		order.Status = "OPEN"
 	}
 	return trades, nil
 }
 
 func matchSellOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+	originalQty := order.Quantity
 	trades := []*models.Trade{}
 	for order.Quantity > 0 {
 		bestBid := ob.GetBestBid()
@@ -58,11 +70,19 @@ func matchSellOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error)
 		bestBid.Quantity -= tradeQty
 
 		if bestBid.Quantity == 0 {
+			bestBid.Status = "FILLED"
 			ob.RemoveOrder(bestBid.ID, "BUY")
+		} else {
+			bestBid.Status = "PARTIAL"
 		}
 	}
-	if order.Quantity > 0 {
-		ob.AddOrder(order)
+	if order.Quantity == 0 {
+		order.Status = "FILLED"
+		ob.RemoveOrder(order.ID, "SELL")
+	} else if order.Quantity < originalQty {
+		order.Status = "PARTIAL"
+	} else {
+		order.Status = "OPEN"
 	}
 	return trades, nil
 }
