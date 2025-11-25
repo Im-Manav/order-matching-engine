@@ -113,8 +113,10 @@ func createPriceList(m map[float64][]*models.Order) []float64 {
 		return []float64{}
 	}
 	var priceList []float64
-	for price := range m {
-		priceList = append(priceList, price)
+	for price, orders := range m {
+		if len(orders) > 0 {
+			priceList = append(priceList, price)
+		}
 	}
 	return priceList
 }
