@@ -89,6 +89,34 @@ func (ob *OrderBook) Printbook(depth int) {
 	}
 }
 
+func (ob *OrderBook) FindOrder(id string) *models.Order {
+	for _, orders := range ob.buyOrders {
+		for _, o := range orders {
+			if o.ID == id {
+				return o
+			}
+		}
+	}
+	for _, orders := range ob.sellOrders {
+		for _, o := range orders {
+			if o.ID == id {
+				return o
+			}
+		}
+	}
+	return nil
+}
+
+func (ob *OrderBook) Cancel(id string) (bool, string) {
+	if ok, _ := removeFromMap(ob.buyOrders, id); ok {
+		return true, "BUY"
+	}
+	if ok, _ := removeFromMap(ob.sellOrders, id); ok {
+		return true, "SELL"
+	}
+	return false, ""
+}
+
 // <-- Helper Functions -->
 
 // Helper for Remove Order
