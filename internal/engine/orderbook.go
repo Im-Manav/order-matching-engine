@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
 )
@@ -21,6 +22,7 @@ func NewOrderBook() *OrderBook {
 }
 
 func (ob *OrderBook) AddOrder(order *models.Order) {
+	order.CreatedAt = time.Now()
 	if order.Side == "BUY" {
 		ob.buyOrders[order.Price] = append(ob.buyOrders[order.Price], order)
 	}
@@ -42,28 +44,32 @@ func (ob *OrderBook) RemoveOrder(orderID string, side string) {
 
 // The highest buy
 func (ob *OrderBook) GetBestBid() *models.Order {
-	if len(ob.buyOrders) == 0 {
-		return nil
-	}
 	priceList := createPriceList(ob.buyOrders)
-	if len(priceList) == 0 {
-		return nil
-	}
 	sort.Float64s(priceList)
-	return ob.buyOrders[priceList[len(priceList)-1]][0]
+
+	for _, price := range priceList {
+		for _, order := range ob.buyOrders[price] {
+			if order.Quantity > 0 {
+				return order
+			}
+		}
+	}
+	return nil
 }
 
 // The lowest sell
 func (ob *OrderBook) GetBestAsk() *models.Order {
-	if len(ob.sellOrders) == 0 {
-		return nil
-	}
 	priceList := createPriceList(ob.sellOrders)
-	if len(priceList) == 0 {
-		return nil
-	}
 	sort.Float64s(priceList)
-	return ob.sellOrders[priceList[0]][0]
+
+	for _, price := range priceList {
+		for _, o := range ob.sellOrders[price] {
+			if o.Quantity > 0 {
+				return o
+			}
+		}
+	}
+	return nil
 }
 
 // To print the entire book
