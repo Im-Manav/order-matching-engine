@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Order struct {
-	ID           string    `json:"id"`
+	ID           string    `json:"id" gorm:"primaryKey;type:uuid"`
 	Symbol       string    `json:"symbol"`
 	Side         string    `json:"side"` // BUY or SELL
 	Quantity     int64     `json:"quantity"`

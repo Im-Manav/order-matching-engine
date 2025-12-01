@@ -1,5 +1,7 @@
 package engine
 
+// This file is only needed to implement in-memory orderbook operations
+
 import (
 	"errors"
 	"fmt"

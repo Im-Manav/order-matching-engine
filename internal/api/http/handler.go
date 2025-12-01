@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/Im-Manav/order-matching-engine/internal/engine"
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
 	"github.com/gin-gonic/gin"
@@ -11,12 +12,16 @@ import (
 
 type HTTPHandler struct {
 	orderBook *engine.OrderBook
+	repo      *db.Repo
 }
 
-func NewHTTPHandler() *HTTPHandler {
-	return &HTTPHandler{
+func NewHTTPHandler(repo *db.Repo) *HTTPHandler {
+	h := &HTTPHandler{
 		orderBook: engine.NewOrderBook(),
+		repo:      repo,
 	}
+	h.RestoreOrderBook("AAPL")
+	return h
 }
 
 type OrderRequest struct {
@@ -47,8 +52,25 @@ func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 		Quantity: req.Quantity,
 	}
 
-	trades, err := engine.Match(order, h.orderBook)
+	if err := h.repo.SaveOrder(order); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	trades, err := engine.Match(order, h.orderBook, h.repo)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(trades) > 0 {
+		if err := h.repo.SaveTrades(trades); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	if err := h.repo.UpdateOrder(order); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -65,10 +87,15 @@ func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 }
 
 func (h *HTTPHandler) GetOrderBook(c *gin.Context) {
-	ob := h.orderBook
-	bestBid := ob.GetBestBid()
-	bestAsk := ob.GetBestAsk()
-
+	symbol := c.Param("symbol")
+	bestBid, err := h.repo.GetBestBid(symbol)
+	if err != nil {
+		bestBid = nil
+	}
+	bestAsk, err := h.repo.GetBestAsk(symbol)
+	if err != nil {
+		bestAsk = nil
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"best_bid": bestBid,
 		"best_ask": bestAsk,
@@ -77,9 +104,9 @@ func (h *HTTPHandler) GetOrderBook(c *gin.Context) {
 
 func (h *HTTPHandler) GetOrderByID(c *gin.Context) {
 	id := c.Param("id")
-	order := h.orderBook.FindOrder(id)
-	if order == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+	order, err := h.repo.GetOrderByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, order)
@@ -87,18 +114,34 @@ func (h *HTTPHandler) GetOrderByID(c *gin.Context) {
 
 func (h *HTTPHandler) CancelOrder(c *gin.Context) {
 	id := c.Param("id")
-	found, side := h.orderBook.Cancel(id)
-	if !found {
+	order, err := h.repo.GetOrderByID(id)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
 		return
+	}
+	delete := h.repo.DeleteOrder(id)
+	if delete != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"order_id": id,
 		"status":   "CANCELLED",
-		"side":     side,
+		"side":     order.Side,
 	})
 
+}
+
+func (h *HTTPHandler) RestoreOrderBook(symbol string) {
+	buyOrders, _ := h.repo.GetOpenOrders(symbol, "BUY")
+	for _, o := range buyOrders {
+		h.orderBook.AddOrder(o)
+	}
+
+	sellOrders, _ := h.repo.GetOpenOrders(symbol, "SELL")
+	for _, o := range sellOrders {
+		h.orderBook.AddOrder(o)
+	}
 }
 
 // Helper Functions
