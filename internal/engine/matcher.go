@@ -4,24 +4,25 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
 	"github.com/google/uuid"
 )
 
-func Match(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+func Match(order *models.Order, ob *OrderBook, repo *db.Repo) ([]*models.Trade, error) {
 	ob.AddOrder(order)
 	order.Status = "OPEN"
 	switch order.Side {
 	case "BUY":
-		return matchBuyOrder(order, ob)
+		return matchBuyOrder(order, ob, repo)
 	case "SELL":
-		return matchSellOrder(order, ob)
+		return matchSellOrder(order, ob, repo)
 	default:
 		return nil, errors.New("invalid order side")
 	}
 }
 
-func matchBuyOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+func matchBuyOrder(order *models.Order, ob *OrderBook, repo *db.Repo) ([]*models.Trade, error) {
 	originalQty := order.Quantity
 	trades := []*models.Trade{}
 	for order.Quantity > 0 {
@@ -38,9 +39,11 @@ func matchBuyOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) 
 
 		if bestAsk.Quantity == 0 {
 			bestAsk.Status = "FILLED"
+			repo.UpdateOrder(bestAsk)
 			ob.RemoveOrder(bestAsk.ID, "SELL")
 		} else {
 			bestAsk.Status = "PARTIAL"
+			repo.UpdateOrder(bestAsk)
 		}
 	}
 	if order.Quantity == 0 {
@@ -54,7 +57,7 @@ func matchBuyOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) 
 	return trades, nil
 }
 
-func matchSellOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error) {
+func matchSellOrder(order *models.Order, ob *OrderBook, repo *db.Repo) ([]*models.Trade, error) {
 	originalQty := order.Quantity
 	trades := []*models.Trade{}
 	for order.Quantity > 0 {
@@ -71,8 +74,10 @@ func matchSellOrder(order *models.Order, ob *OrderBook) ([]*models.Trade, error)
 
 		if bestBid.Quantity == 0 {
 			bestBid.Status = "FILLED"
+			repo.UpdateOrder(bestBid)
 			ob.RemoveOrder(bestBid.ID, "BUY")
 		} else {
+			repo.UpdateOrder(bestBid)
 			bestBid.Status = "PARTIAL"
 		}
 	}

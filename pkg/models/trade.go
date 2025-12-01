@@ -1,7 +1,7 @@
 package models
 
 type Trade struct {
-	ID          string  `json:"id"`
+	ID          string  `json:"id" gorm:"primaryKey;type:uuid"`
 	BuyOrderID  string  `json:"buy_order_id"`
 	SellOrderID string  `json:"sell_order_id"`
 	Symbol      string  `json:"symbol"`
