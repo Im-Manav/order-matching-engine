@@ -1,10 +1,41 @@
 package engine
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
+
+func newTestRepo(t *testing.T) *db.Repo {
+	t.Helper()
+	godotenv.Load()
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	port := os.Getenv("DB_PORT")
+
+	if host == "" || user == "" || password == "" || port == "" {
+		panic("Missing required database environment variables")
+	}
+
+	// Note: If you face any issues enter the variables manually in dsn for testing purposes
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=manav port=%s sslmode=disable", host, user, password, port)
+	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to connect to test db: %v", err)
+	}
+	if err := gdb.AutoMigrate(&models.Order{}, &models.Trade{}); err != nil {
+		t.Fatalf("failed to migrate: %v", err)
+	}
+	return &db.Repo{DB: gdb}
+}
 
 func TestPerfectMatch(t *testing.T) {
 	ob := NewOrderBook()
@@ -13,7 +44,8 @@ func TestPerfectMatch(t *testing.T) {
 	sell := &models.Order{ID: "s1", Side: "SELL", Price: 100, Quantity: 10}
 
 	ob.AddOrder(sell)
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if len(trades) != 1 {
 		t.Fatalf("expected 1 trade, got %d", len(trades))
@@ -22,6 +54,7 @@ func TestPerfectMatch(t *testing.T) {
 		t.Errorf("expected qty 10, got %d", trades[0].Quantity)
 	}
 }
+
 func TestPartialFill_BuyLarger(t *testing.T) {
 	ob := NewOrderBook()
 
@@ -40,7 +73,8 @@ func TestPartialFill_BuyLarger(t *testing.T) {
 		Quantity: 10,
 	}
 
-	trades, err := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, err := Match(buy, ob, repo)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +118,9 @@ func TestPartialFill_SellLarger(t *testing.T) {
 		Quantity: 12,
 	}
 
-	trades, err := Match(sell, ob)
+	repo := newTestRepo(t)
+	// sell is incoming here
+	trades, err := Match(sell, ob, repo)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -123,7 +159,8 @@ func TestPartialFill_MultiLevel(t *testing.T) {
 		Quantity: 10,
 	}
 
-	trades, err := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, err := Match(buy, ob, repo)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,7 +188,8 @@ func TestNoMatch(t *testing.T) {
 	ob.AddOrder(&models.Order{ID: "s1", Side: "SELL", Price: 105, Quantity: 10})
 	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 10}
 
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if len(trades) != 0 {
 		t.Errorf("expected no trades")
@@ -171,7 +209,8 @@ func TestMultiLevelMatch(t *testing.T) {
 
 	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 10}
 
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if len(trades) != 2 {
 		t.Fatalf("expected 2 trades")
@@ -195,7 +234,8 @@ func TestChoosesBestAsk(t *testing.T) {
 
 	buy := &models.Order{ID: "b1", Side: "BUY", Price: 105, Quantity: 3}
 
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if trades[0].Price != 100 {
 		t.Errorf("trade should happen at best ask 100")
@@ -210,7 +250,8 @@ func TestFIFO(t *testing.T) {
 
 	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 4}
 
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if trades[0].SellOrderID != "s1" {
 		t.Errorf("expected s1 first due to FIFO")
@@ -223,15 +264,12 @@ func TestFIFO(t *testing.T) {
 func TestNoMatch_BuyTooLow(t *testing.T) {
 	ob := NewOrderBook()
 
-	ob.AddOrder(&models.Order{
-		ID: "s1", Side: "SELL", Price: 100, Quantity: 5,
-	})
+	ob.AddOrder(&models.Order{ID: "s1", Side: "SELL", Price: 100, Quantity: 5})
 
-	buy := &models.Order{
-		ID: "b1", Side: "BUY", Price: 95, Quantity: 5,
-	}
+	buy := &models.Order{ID: "b1", Side: "BUY", Price: 95, Quantity: 5}
 
-	trades, err := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, err := Match(buy, ob, repo)
 	if err != nil {
 		t.Fatalf("unexpected error")
 	}
@@ -253,11 +291,10 @@ func TestNoMatch_BuyTooLow(t *testing.T) {
 func TestNoMatch_EmptyBook(t *testing.T) {
 	ob := NewOrderBook()
 
-	buy := &models.Order{
-		ID: "b1", Side: "BUY", Price: 100, Quantity: 10,
-	}
+	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 10}
 
-	trades, err := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, err := Match(buy, ob, repo)
 	if err != nil {
 		t.Fatalf("unexpected error")
 	}
@@ -274,12 +311,13 @@ func TestNoMatch_EmptyBook(t *testing.T) {
 func TestExactMultiMatch(t *testing.T) {
 	ob := NewOrderBook()
 
-	ob.AddOrder(&models.Order{ID: "s1", Side: "SELL", Price: 100, Quantity: 3, Status: "OPEN"})
-	ob.AddOrder(&models.Order{ID: "s2", Side: "SELL", Price: 100, Quantity: 6, Status: "OPEN"})
+	ob.AddOrder(&models.Order{ID: "s1", Side: "SELL", Price: 100, Quantity: 3})
+	ob.AddOrder(&models.Order{ID: "s2", Side: "SELL", Price: 100, Quantity: 6})
 
-	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 9, Status: "OPEN"}
+	buy := &models.Order{ID: "b1", Side: "BUY", Price: 100, Quantity: 9}
 
-	trades, _ := Match(buy, ob)
+	repo := newTestRepo(t)
+	trades, _ := Match(buy, ob, repo)
 
 	if len(trades) != 2 {
 		t.Fatalf("expected 2 trades")
@@ -306,7 +344,8 @@ func TestInvalidSide(t *testing.T) {
 	order := &models.Order{
 		ID: "x1", Side: "HOLD", Price: 100, Quantity: 5,
 	}
-	_, err := Match(order, ob)
+	repo := newTestRepo(t)
+	_, err := Match(order, ob, repo)
 	if err == nil {
 		t.Fatalf("expected error for invalid side")
 	}
@@ -354,8 +393,8 @@ func TestMatching_Scenarios(t *testing.T) {
 			for _, o := range tc.initial {
 				ob.AddOrder(o)
 			}
-
-			trades, _ := Match(tc.incoming, ob)
+			repo := newTestRepo(t)
+			trades, _ := Match(tc.incoming, ob, repo)
 
 			if len(trades) != tc.wantTrades {
 				t.Errorf("expected %d trades, got %d", tc.wantTrades, len(trades))
