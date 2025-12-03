@@ -126,7 +126,7 @@ func (h *HTTPHandler) GetOrderBook(c *gin.Context) {
 // @Description Returns order details based on the given ID
 // @Tags Orders
 // @Produce json
-// @Param id path int true "Order ID"
+// @Param id path string true "Order ID"
 // @Success 200 {object} models.Order
 // @Failure 404 {object} map[string]string
 // @Router /orders/{id} [get]
@@ -145,8 +145,8 @@ func (h *HTTPHandler) GetOrderByID(c *gin.Context) {
 // @Description Cancels an existing order if not already filled
 // @Tags Orders
 // @Produce json
-// @Param id path int true "Order ID"
-// @Success 200 {object} map[string]string
+// @Param id path string true "Order ID"
+// @Success 200 {object} models.Order
 // @Failure 404 {object} map[string]string
 // @Router /orders/{id} [delete]
 func (h *HTTPHandler) CancelOrder(c *gin.Context) {

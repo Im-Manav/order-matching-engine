@@ -112,7 +112,7 @@ const docTemplate = `{
                 "summary": "Get order by ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Order ID",
                         "name": "id",
                         "in": "path",
@@ -148,7 +148,7 @@ const docTemplate = `{
                 "summary": "Cancel an order",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Order ID",
                         "name": "id",
                         "in": "path",
@@ -159,10 +159,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.Order"
                         }
                     },
                     "404": {

@@ -109,7 +109,7 @@
                 "summary": "Get order by ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Order ID",
                         "name": "id",
                         "in": "path",
@@ -145,7 +145,7 @@
                 "summary": "Cancel an order",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Order ID",
                         "name": "id",
                         "in": "path",
@@ -156,10 +156,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/models.Order"
                         }
                     },
                     "404": {
