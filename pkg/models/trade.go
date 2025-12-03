@@ -1,5 +1,7 @@
 package models
 
+// Trade represents an executed match between two orders
+// @Description Trade model
 type Trade struct {
 	ID          string  `json:"id" gorm:"primaryKey;type:uuid"`
 	BuyOrderID  string  `json:"buy_order_id"`

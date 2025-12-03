@@ -1,0 +1,148 @@
+basePath: /
+definitions:
+  models.Order:
+    description: Order model
+    properties:
+      created_at:
+        type: string
+      filled_qty:
+        type: integer
+      id:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      remaining_qty:
+        type: integer
+      side:
+        description: BUY or SELL
+        type: string
+      status:
+        description: OPEN, FILLED, CANCELLED
+        type: string
+      symbol:
+        type: string
+      type:
+        description: MARKET or LIMIT
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: your-email@example.com
+    name: Manav Gupta
+  description: REST API for placing, cancelling, and viewing orders & order book.
+  title: Order Matching Engine API
+  version: "1.0"
+paths:
+  /orderbook/{symbol}:
+    get:
+      description: Returns best bids and asks for the given trading symbol
+      parameters:
+      - description: Trading Symbol
+        in: path
+        name: symbol
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get order book for a symbol
+      tags:
+      - OrderBook
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Creates a buy or sell order in the order matching engine
+      parameters:
+      - description: Order payload
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/models.Order'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Place a new order
+      tags:
+      - Orders
+  /orders/{id}:
+    delete:
+      description: Cancels an existing order if not already filled
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cancel an order
+      tags:
+      - Orders
+    get:
+      description: Returns order details based on the given ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get order by ID
+      tags:
+      - Orders
+schemes:
+- http
+swagger: "2.0"

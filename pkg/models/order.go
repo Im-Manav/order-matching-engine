@@ -2,6 +2,8 @@ package models
 
 import "time"
 
+// Order represents a trading order
+// @Description Order model
 type Order struct {
 	ID           string    `json:"id" gorm:"primaryKey;type:uuid"`
 	Symbol       string    `json:"symbol"`
