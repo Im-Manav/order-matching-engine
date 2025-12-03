@@ -37,6 +37,16 @@ type OrderResponse struct {
 	Message string          `json:"message"`
 }
 
+// PlaceOrder godoc
+// @Summary Place a new order
+// @Description Creates a buy or sell order in the order matching engine
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Param order body models.Order true "Order payload"
+// @Success 201 {object} models.Order
+// @Failure 400 {object} map[string]string
+// @Router /orders [post]
 func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 	var req OrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -86,6 +96,15 @@ func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 	})
 }
 
+// GetOrderBook godoc
+// @Summary Get order book for a symbol
+// @Description Returns best bids and asks for the given trading symbol
+// @Tags OrderBook
+// @Produce json
+// @Param symbol path string true "Trading Symbol"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Router /orderbook/{symbol} [get]
 func (h *HTTPHandler) GetOrderBook(c *gin.Context) {
 	symbol := c.Param("symbol")
 	bestBid, err := h.repo.GetBestBid(symbol)
@@ -102,6 +121,15 @@ func (h *HTTPHandler) GetOrderBook(c *gin.Context) {
 	})
 }
 
+// GetOrderByID godoc
+// @Summary Get order by ID
+// @Description Returns order details based on the given ID
+// @Tags Orders
+// @Produce json
+// @Param id path int true "Order ID"
+// @Success 200 {object} models.Order
+// @Failure 404 {object} map[string]string
+// @Router /orders/{id} [get]
 func (h *HTTPHandler) GetOrderByID(c *gin.Context) {
 	id := c.Param("id")
 	order, err := h.repo.GetOrderByID(id)
@@ -112,6 +140,15 @@ func (h *HTTPHandler) GetOrderByID(c *gin.Context) {
 	c.JSON(http.StatusOK, order)
 }
 
+// CancelOrder godoc
+// @Summary Cancel an order
+// @Description Cancels an existing order if not already filled
+// @Tags Orders
+// @Produce json
+// @Param id path int true "Order ID"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /orders/{id} [delete]
 func (h *HTTPHandler) CancelOrder(c *gin.Context) {
 	id := c.Param("id")
 	order, err := h.repo.GetOrderByID(id)

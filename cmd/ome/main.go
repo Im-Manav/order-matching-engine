@@ -1,13 +1,26 @@
+// @title Order Matching Engine API
+// @version 1.0
+// @description REST API for placing, cancelling, and viewing orders & order book.
+// @BasePath /
+
+// @contact.name Manav Gupta
+// @contact.email your-email@example.com
+
+// @host localhost:8080
+// @schemes http
 package main
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/Im-Manav/order-matching-engine/internal/api/docs"
 	api "github.com/Im-Manav/order-matching-engine/internal/api/http"
 	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -28,6 +41,14 @@ func main() {
 
 	h := api.NewHTTPHandler(repo)
 	r := gin.Default()
+
+	// Swagger setup
+	docs.SwaggerInfo.Title = "Order Matching Engine API"
+	docs.SwaggerInfo.Description = "API documentation for Order Matching Engine"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.BasePath = "/"
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	orders := r.Group("/orders")
 	{
 		orders.POST("", h.PlaceOrder)
