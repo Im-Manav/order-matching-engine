@@ -34,3 +34,7 @@ order-matching-engine/
 ├── go.sum
 └── README.md
 ```
+
+In order to start the server, run go run cmd/ome/main.go
+Access Swagger UI at http://localhost:8080/swagger/index.html
+Make sure the server is also running at the same port as Swagger(In this case 8080)
