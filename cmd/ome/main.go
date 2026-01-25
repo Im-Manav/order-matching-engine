@@ -16,6 +16,7 @@ import (
 
 	"github.com/Im-Manav/order-matching-engine/internal/api/docs"
 	api "github.com/Im-Manav/order-matching-engine/internal/api/http"
+	"github.com/Im-Manav/order-matching-engine/internal/api/ws"
 	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -48,6 +49,12 @@ func main() {
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.BasePath = "/"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Websocket Setup
+	hub := ws.NewHub()
+	go hub.Run()
+
+	r.GET("/ws", ws.ServeWS(hub))
 
 	orders := r.Group("/orders")
 	{
