@@ -56,5 +56,5 @@ func main() {
 		orders.DELETE("/:id", h.CancelOrder)
 	}
 	r.GET("/orderbook/:symbol", h.GetOrderBook)
-	r.Run(os.Getenv("APP_PORT"))
+	r.Run(":" + os.Getenv("APP_PORT"))
 }
