@@ -1,10 +1,8 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
-	"github.com/Im-Manav/order-matching-engine/internal/api/ws"
 	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/Im-Manav/order-matching-engine/internal/engine"
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
@@ -15,7 +13,6 @@ import (
 type HTTPHandler struct {
 	orderBook *engine.OrderBook
 	repo      *db.Repo
-	hub       *ws.Hub
 }
 
 func NewHTTPHandler(repo *db.Repo) *HTTPHandler {
@@ -81,12 +78,6 @@ func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		// Websocket Handler
-		data, _ := json.Marshal(gin.H{
-			"type": "trade",
-			"data": trades,
-		})
-		h.hub.Broadcast(data)
 	}
 
 	if err := h.repo.UpdateOrder(order); err != nil {
