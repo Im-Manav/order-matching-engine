@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/Im-Manav/order-matching-engine/internal/api/ws"
 	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/Im-Manav/order-matching-engine/internal/engine"
 	"github.com/Im-Manav/order-matching-engine/pkg/models"
@@ -13,16 +14,20 @@ import (
 type HTTPHandler struct {
 	orderBook *engine.OrderBook
 	repo      *db.Repo
+	hub       *ws.Hub
 }
 
-func NewHTTPHandler(repo *db.Repo) *HTTPHandler {
+func NewHTTPHandler(repo *db.Repo, hub *ws.Hub) *HTTPHandler {
 	h := &HTTPHandler{
 		orderBook: engine.NewOrderBook(),
 		repo:      repo,
+		hub:       hub,
 	}
 	h.RestoreOrderBook("AAPL")
 	return h
 }
+
+// ... (keep the rest of the file unchanged) ...
 
 type OrderRequest struct {
 	Symbol   string  `json:"symbol" binding:"required"`
@@ -77,6 +82,12 @@ func (h *HTTPHandler) PlaceOrder(c *gin.Context) {
 		if err := h.repo.SaveTrades(trades); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
+		}
+		// Broadcast each trade to connected websocket clients
+		if h.hub != nil {
+			for _, t := range trades {
+				h.hub.BroadcastTrade(t)
+			}
 		}
 	}
 
