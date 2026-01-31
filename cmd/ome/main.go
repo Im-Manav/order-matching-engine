@@ -16,6 +16,7 @@ import (
 
 	"github.com/Im-Manav/order-matching-engine/internal/api/docs"
 	api "github.com/Im-Manav/order-matching-engine/internal/api/http"
+	"github.com/Im-Manav/order-matching-engine/internal/api/ws"
 	"github.com/Im-Manav/order-matching-engine/internal/db"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -39,7 +40,11 @@ func main() {
 	gormDB := db.NewGormDB(dsn)
 	repo := db.NewRepo(gormDB)
 
-	h := api.NewHTTPHandler(repo)
+	// Websocket hub
+	wsHub := ws.NewHub()
+	go wsHub.Run()
+
+	h := api.NewHTTPHandler(repo, wsHub)
 	r := gin.Default()
 
 	// Swagger setup
@@ -48,6 +53,11 @@ func main() {
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.BasePath = "/"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// // Websocket hub
+	// wsHub := ws.NewHub()
+	// go wsHub.Run()
+	r.GET("/ws", func(c *gin.Context) { ws.ServeWs(wsHub, c) })
 
 	orders := r.Group("/orders")
 	{
@@ -58,5 +68,3 @@ func main() {
 	r.GET("/orderbook/:symbol", h.GetOrderBook)
 	r.Run(":" + os.Getenv("APP_PORT"))
 }
-
-// This is from the test branch
