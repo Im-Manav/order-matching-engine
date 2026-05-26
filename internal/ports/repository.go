@@ -9,7 +9,7 @@ import (
 // The matching engine never calls this directly
 type OrderRepository interface {
 	SaveOrder(order *models.Order) error
-	UpdateOrder(order models.Order) error
+	UpdateOrder(order *models.Order) error
 	GetOrderByID(id uuid.UUID) (*models.Order, error)
 	GetOpenOrdersBySymbol(symbol string) ([]*models.Order, error)
 	GetOrdersByUserID(userID uuid.UUID) ([]*models.Order, error)
