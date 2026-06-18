@@ -31,6 +31,12 @@ type Config struct {
 
 	JWTSecret      string
 	JWTExpiryHours int
+
+	AIProvider         string
+	AIBaseURL          string
+	AIModel            string
+	AIAPIKey           string
+	PredictionInterval int
 }
 
 func Load() (*Config, error) {
@@ -65,6 +71,17 @@ func Load() (*Config, error) {
 		JWTSecret:      getEnv("JWT_SECRET", "change_me"),
 		JWTExpiryHours: jwtExpiry,
 	}
+
+	cfg.AIProvider = getEnv("AI_PROVIDER", "ollama")
+	cfg.AIBaseURL = getEnv("AI_BASE_URL", "http://localhost:11434")
+	cfg.AIModel = getEnv("AI_MODEL", "llama3.2")
+	cfg.AIAPIKey = getEnv("AI_API_KEY", "")
+
+	predInterval, err := strconv.Atoi(getEnv("PREDICTION_INTERVAL_SECONDS", "60"))
+	if err != nil {
+		predInterval = 60
+	}
+	cfg.PredictionInterval = predInterval
 
 	if err := cfg.validate(); err != nil {
 		return nil, err
