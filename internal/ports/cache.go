@@ -19,6 +19,7 @@ type Cache interface {
 	// Pub/Sub - for broadcasting trades to Websocket clients
 	Publish(ctx context.Context, channel string, payload any) error
 	Subscribe(ctx context.Context, channel string) (<-chan string, error)
+	PublishOrderBookUpdate(ctx context.Context, snap models.OrderBookSnapshot) error
 
 	// Session - JWT blocklist for logout
 	SetWithExpiry(ctx context.Context, key, value string, expiry time.Duration) error

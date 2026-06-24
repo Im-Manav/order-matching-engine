@@ -157,6 +157,10 @@ func applyFill(order *models.Order, qty float64) {
 	}
 }
 
+func (m *Matcher) BookFor(symbol string) *OrderBook {
+	return m.getOrCreateBook(symbol)
+}
+
 func min(a, b float64) float64 {
 	if a < b {
 		return a

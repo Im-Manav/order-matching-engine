@@ -207,9 +207,7 @@ func (ob *OrderBook) Size() int {
 
 // aggregateLevels groups orders by price into OrderBookLevel entries.
 // This is what the GET /orderbook endpoint returns.
-func aggregateLevels[H interface {
-	Len() int
-}](h H, levels int, _ bool) []models.OrderBookLevel {
+func aggregateLevels(h any, levels int, _ bool) []models.OrderBookLevel {
 	// We snapshot the heap slice - don't mutate it
 	var orders []*models.Order
 	switch v := any(h).(type) {
@@ -217,6 +215,8 @@ func aggregateLevels[H interface {
 		orders = []*models.Order(*v)
 	case *sellHeap:
 		orders = []*models.Order(*v)
+	default:
+		return []models.OrderBookLevel{}
 	}
 
 	levelMap := make(map[float64]*models.OrderBookLevel)
